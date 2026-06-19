@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Randevu Al</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8f9fa; color: #333; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; padding: 40px 20px; text-align: center; }
+    .header h1 { font-size: 28px; margin-bottom: 6px; }
+    .header p { font-size: 14px; opacity: 0.8; }
+
+    .steps { display: flex; justify-content: center; gap: 4px; padding: 20px; max-width: 500px; margin: 0 auto; }
+    .step { flex: 1; text-align: center; font-size: 11px; color: #aaa; cursor: default; }
+    .step.done { cursor: pointer; }
+    .step.done:hover .circle { transform: scale(1.1); box-shadow: 0 2px 8px rgba(40,167,69,0.3); }
+    .step .circle { width: 32px; height: 32px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 14px; font-weight: 600; color: #999; transition: all 0.3s; }
+    .step.active .circle { background: #1a1a2e; color: #fff; }
+    .step.done .circle { background: #28a745; color: #fff; }
+    .step.active { color: #1a1a2e; font-weight: 600; }
+    .step.done { color: #28a745; }
+
+    .container { max-width: 500px; margin: 0 auto; padding: 0 20px 40px; }
+    .step-content { display: none; }
+    .step-content.active { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; margin-top: 16px; }
+    select, input { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 15px; background: #fff; transition: border-color 0.2s; }
+    select:focus, input:focus { outline: none; border-color: #1a1a2e; }
+    select { cursor: pointer; appearance: auto; }
+
+    .barber-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .barber-card { padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .barber-card:hover { border-color: #1a1a2e; }
+    .barber-card.selected { border-color: #1a1a2e; background: #f0f0ff; }
+    .barber-card .name { font-weight: 600; font-size: 15px; }
+    .barber-card .desc { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .service-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .service-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+    .service-item:hover { border-color: #1a1a2e; }
+    .service-item.selected { border-color: #1a1a2e; background: #f0f0ff; }
+    .service-item .info { flex: 1; }
+    .service-item .name { font-weight: 600; font-size: 15px; }
+    .service-item .duration { font-size: 12px; color: #888; }
+    .service-item .price { font-weight: 600; color: #1a1a2e; font-size: 16px; }
+
+    .slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    .slot-btn { padding: 12px 8px; border: 2px solid #e0e0e0; border-radius: 8px; background: #fff; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+    .slot-btn:hover { border-color: #1a1a2e; }
+    .slot-btn.selected { border-color: #1a1a2e; background: #1a1a2e; color: #fff; }
+    .slot-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 20px; }
+    .btn-primary { background: #1a1a2e; color: #fff; }
+    .btn-primary:hover { background: #16213e; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: #e9ecef; color: #333; }
+    .btn-secondary:hover { background: #dee2e6; }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-success:hover { background: #218838; }
+
+    .loading { text-align: center; padding: 40px; color: #888; }
+    .loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 3px solid #e9ecef; border-top-color: #1a1a2e; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .success-screen { text-align: center; padding: 40px 20px; }
+    .success-screen .icon { font-size: 64px; margin-bottom: 16px; }
+    .success-screen h2 { font-size: 24px; margin-bottom: 8px; }
+    .success-screen p { color: #666; line-height: 1.6; margin-bottom: 4px; }
+
+    /* Date picker styling */
+    input[type="date"] { cursor: pointer; }
+
+    /* Phone lookup */
+    .lookup-section { max-width: 500px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .lookup-section h3 { font-size: 16px; margin-bottom: 12px; color: #333; }
+    .lookup-row { display: flex; gap: 8px; }
+    .lookup-row input { flex: 1; }
+    .lookup-row .btn { width: auto; margin-top: 0; padding: 12px 20px; white-space: nowrap; }
+    .appointment-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-top: 8px; }
+    .appointment-card .top { display: flex; justify-content: space-between; align-items: start; }
+    .appointment-card .status { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-confirmed { background: #d4edda; color: #155724; }
+    .status-completed { background: #cce5ff; color: #004085; }
+    .status-canceled { background: #f8d7da; color: #721c24; }
+    .appointment-card .detail { font-size: 13px; color: #666; margin-top: 4px; }
+
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 1000; display: none; animation: fadeIn 0.3s; }
+
+    /* Barber appointments modal */
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 id="bizTitle">Berber</h1>
+    <p id="bizDesc">Randevu Sistemi</p>
+  </div>
+
+  <!-- Step Progress -->
+  <div class="steps">
+    <div class="step active" data-step="1"><div class="circle">1</div>Usta</div>
+    <div class="step" data-step="2"><div class="circle">2</div>Hizmet</div>
+    <div class="step" data-step="3"><div class="circle">3</div>Tarih</div>
+    <div class="step" data-step="4"><div class="circle">4</div>Saat</div>
+    <div class="step" data-step="5"><div class="circle">5</div>Bilgiler</div>
+  </div>
+
+  <div class="container" id="app">
+    <!-- Step 1: Barber -->
+    <div class="step-content active" data-step="1">
+      <label>Usta Seçin</label>
+      <div class="barber-cards" id="barberList"></div>
+    </div>
+
+    <!-- Step 2: Service -->
+    <div class="step-content" data-step="2">
+      <label>Hizmet Seçin</label>
+      <div class="service-list" id="serviceList"></div>
+    </div>
+
+    <!-- Step 3: Date -->
+    <div class="step-content" data-step="3">
+      <label>Tarih Seçin</label>
+      <input type="date" id="dateInput" min="">
+      <div id="dateError" style="color: #dc3545; font-size: 13px; margin-top: 8px; display: none;"></div>
+    </div>
+
+    <!-- Step 4: Time Slot -->
+    <div class="step-content" data-step="4">
+      <label>Uygun Saatler</label>
+      <div id="slotContainer" class="slot-grid"></div>
+      <div id="slotError" style="color: #888; font-size: 13px; margin-top: 8px; text-align: center; display: none;"></div>
+      <button class="btn btn-secondary" onclick="goToStep(3)" style="margin-top: 12px;">← Tarih Seçimine Dön</button>
+    </div>
+
+    <!-- Step 5: Customer Info -->
+    <div class="step-content" data-step="5">
+      <label>Adınız Soyadınız</label>
+      <input type="text" id="customerName" placeholder="Adınız ve soyadınız">
+      <label>Telefon Numaranız</label>
+      <input type="tel" id="customerPhone" placeholder="05XX XXX XX XX">
+      <label>Not (isteğe bağlı)</label>
+      <input type="text" id="customerNote" placeholder="Varsa eklemek istedikleriniz">
+      <button class="btn btn-primary" id="submitBtn" disabled>Randevu Al</button>
+      <button class="btn btn-secondary" onclick="goToStep(4)" style="margin-top: 8px;">← Saat Seçimine Dön</button>
+    </div>
+  </div>
+
+  <!-- Success Screen -->
+  <div class="container" id="successScreen" style="display:none;">
+    <div class="success-screen">
+      <div class="icon">✅</div>
+      <h2>Randevunuz Alındı!</h2>
+      <p>Randevu detaylarınız aşağıdaki gibidir:</p>
+      <div id="successDetails" style="margin-top: 16px; text-align: left; background: #f8f9fa; padding: 16px; border-radius: 10px;"></div>
+      <p style="margin-top: 20px; font-size: 13px; color: #999;">Randevularınızı görüntülemek için ana sayfadaki telefon sorgulama alanını kullanabilirsiniz.</p>
+      <button class="btn btn-primary" onclick="location.reload()">Yeni Randevu</button>
+    </div>
+  </div>
+
+  <!-- Phone Lookup -->
+  <div class="lookup-section">
+    <h3>📋 Randevularım</h3>
+    <div class="lookup-row">
+      <input type="tel" id="lookupPhone" placeholder="05XX XXX XX XX">
+      <button class="btn btn-primary" onclick="lookupAppointments()">Sorgula</button>
+    </div>
+    <div id="lookupResults"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const state = { barberId: null, serviceId: null, date: null, time: null };
+    let step = 1;
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    function goToStep(n) {
+      // Going back: only to completed (done) steps
+      if (n < step) {
+        if (!document.querySelector(`.step[data-step="${n}"]`)?.classList.contains('done')) return;
+      }
+      // Going forward: allow only +1 (normal progression)
+      if (n > step + 1) return;
+      if (n < step) {
+        // Going back — preserve barber/service if they were already selected
+        if (n <= 1) { state.barberId = null; }
+        if (n <= 2) { state.serviceId = null; }
+        if (n <= 3) { state.date = null; }
+        if (n <= 4) { state.time = null; }
+      }
+      step = n;
+      document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.step-content[data-step="${n}"]`).classList.add('active');
+      document.querySelectorAll('.step').forEach(el => {
+        const s = parseInt(el.dataset.step);
+        el.classList.toggle('active', s === n);
+        el.classList.toggle('done', s < step);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Allow clicking on completed steps to go back
+    document.querySelectorAll('.step').forEach(el => {
+      el.addEventListener('click', () => {
+        const s = parseInt(el.dataset.step);
+        if (s < step) goToStep(s);
+      });
+    });
+
+    // Load business info
+    fetch('/api/settings').then(r => r.json()).then(s => {
+      document.getElementById('bizTitle').textContent = s.business_title || s.business_name || 'Berber';
+      document.getElementById('bizDesc').textContent = s.business_description || 'Randevu Sistemi';
+    });
+
+    // Load barbers
+    fetch('/api/barbers').then(r => r.json()).then(barbers => {
+      const list = document.getElementById('barberList');
+      if (barbers.length === 0) {
+        list.innerHTML = '<p style="color: #888;">Henüz usta eklenmemiş</p>';
+        return;
+      }
+      barbers.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'barber-card';
+        card.innerHTML = `<div class="name">${b.name}</div><div class="desc">${b.description || ''}</div>`;
+        card.onclick = () => {
+          document.querySelectorAll('.barber-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.barberId = b.id;
+          goToStep(2);
+        };
+        list.appendChild(card);
+      });
+    });
+
+    // Load services
+    fetch('/api/services').then(r => r.json()).then(services => {
+      const list = document.getElementById('serviceList');
+      if (services.length === 0) {
+        list.innerHTML = '<p style="color: #888;">Henüz hizmet eklenmemiş</p>';
+        return;
+      }
+      services.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'service-item';
+        item.innerHTML = `<div class="info"><div class="name">${s.name}</div><div class="duration">${s.duration} dk</div></div><div class="price">${s.price} TL</div>`;
+        item.onclick = () => {
+          document.querySelectorAll('.service-item').forEach(c => c.classList.remove('selected'));
+          item.classList.add('selected');
+          state.serviceId = s.id;
+          goToStep(3);
+        };
+        list.appendChild(item);
+      });
+    });
+
+    // Date
+    const dateInput = document.getElementById('dateInput');
+    dateInput.min = new Date().toISOString().split('T')[0];
+    dateInput.addEventListener('change', () => {
+      state.date = dateInput.value;
+      if (!state.date) return;
+      goToStep(4);
+      loadSlots();
+    });
+
+    function loadSlots() {
+      const container = document.getElementById('slotContainer');
+      const error = document.getElementById('slotError');
+      container.innerHTML = '<div class="loading">Saatler yükleniyor</div>';
+      error.style.display = 'none';
+
+      fetch(`/api/slots/${state.barberId}/${state.date}`)
+        .then(r => r.json())
+        .then(data => {
+          container.innerHTML = '';
+          if (data.slots.length === 0) {
+            error.textContent = 'Bu tarihte uygun saat bulunamadı. Lütfen başka bir tarih seçin.';
+            error.style.display = 'block';
+            return;
+          }
+          data.slots.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.className = 'slot-btn';
+            btn.textContent = slot;
+            btn.onclick = () => {
+              document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+              state.time = slot;
+              goToStep(5);
+              validateStep5();
+            };
+            container.appendChild(btn);
+          });
+        })
+        .catch(() => {
+          container.innerHTML = '<p style="color: #dc3545;">Saatler yüklenirken hata oluştu</p>';
+        });
+    }
+
+    // Step 5 validation
+    function validateStep5() {
+      const name = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('customerPhone').value.trim();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = !(name.length >= 2 && phone.length >= 10);
+    }
+
+    document.getElementById('customerName').addEventListener('input', validateStep5);
+    document.getElementById('customerPhone').addEventListener('input', validateStep5);
+
+    // Submit
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      const name = document.getElementById('customerName').value.trim();
+      const phone = document.getElementById('customerPhone').value.trim();
+      const note = document.getElementById('customerNote').value.trim();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Randevu alınıyor...';
+
+      fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barber_id: state.barberId, service_id: state.serviceId, customer_name: name, customer_phone: phone, date: state.date, time: state.time, note })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          showToast('❌ ' + data.error);
+          btn.disabled = false;
+          btn.textContent = 'Randevu Al';
+          return;
+        }
+        // Show success
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('successScreen').style.display = 'block';
+        const det = document.getElementById('successDetails');
+        fetch(`/api/barbers`).then(r => r.json()).then(barbers => {
+          const barber = barbers.find(b => b.id === state.barberId);
+          fetch(`/api/services`).then(r => r.json()).then(services => {
+            const service = services.find(s => s.id === state.serviceId);
+            det.innerHTML = `
+              <p><strong>Usta:</strong> ${barber ? barber.name : '-'}</p>
+              <p><strong>Hizmet:</strong> ${service ? service.name : '-'}</p>
+              <p><strong>Tarih:</strong> ${state.date}</p>
+              <p><strong>Saat:</strong> ${state.time}</p>
+              <p><strong>İsim:</strong> ${name}</p>
+              <p><strong>Telefon:</strong> ${phone}</p>
+            `;
+          });
+        });
+      })
+      .catch(() => {
+        showToast('❌ Bir hata oluştu');
+        btn.disabled = false;
+        btn.textContent = 'Randevu Al';
+      });
+    });
+
+    // Phone lookup
+    function lookupAppointments() {
+      const phone = document.getElementById('lookupPhone').value.trim();
+      const results = document.getElementById('lookupResults');
+      if (!phone || phone.length < 10) { results.innerHTML = '<p style="color: #dc3545; font-size: 13px; margin-top: 8px;">Geçerli bir telefon numarası girin</p>'; return; }
+      results.innerHTML = '<div class="loading">Sorgulanıyor</div>';
+      fetch(`/api/appointments/phone/${phone}`)
+        .then(r => r.json())
+        .then(data => {
+          results.innerHTML = '';
+          if (data.appointments.length === 0) {
+            results.innerHTML = '<p style="color: #888; margin-top: 8px;">Randevu bulunamadı</p>';
+            return;
+          }
+          data.appointments.forEach(a => {
+            const card = document.createElement('div');
+            card.className = 'appointment-card';
+            const statusMap = { pending: 'Onay Bekliyor', confirmed: 'Onaylandı', completed: 'Tamamlandı', canceled: 'İptal Edildi' };
+            card.innerHTML = `
+              <div class="top">
+                <div><strong>${a.service_name}</strong></div>
+                <div class="status status-${a.status}">${statusMap[a.status] || a.status}</div>
+              </div>
+              <div class="detail">👤 ${a.barber_name} | 📅 ${a.date} ${a.time}</div>
+            `;
+            results.appendChild(card);
+          });
+        })
+        .catch(() => {
+          results.innerHTML = '<p style="color: #dc3545;">Sorgulama hatası</p>';
+        });
+    }
+
+    // Enter key for lookup
+    document.getElementById('lookupPhone').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') lookupAppointments();
+    });
+
+
+  </script>
+</body>
+</html>
