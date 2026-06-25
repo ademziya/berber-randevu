@@ -1,7 +1,8 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && npm rebuild better-sqlite3"
+    "buildCommand": "npm install",
+    "watchPatterns": ["public/", "server.js", "package.json"]
   },
   "deploy": {
     "startCommand": "node server.js",
