@@ -436,6 +436,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Bekleme/Durum ekranı (koridor ekranı)
+app.get('/board', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'board.html'));
+});
+
 // ===== Start =====
 app.listen(PORT, () => {
   console.log(`✅ Berber Randevu Sistemi çalışıyor → http://localhost:${PORT}`);

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bugünün Randevuları</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid rgba(255,255,255,0.08);
+    }
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .header .date {
+      font-size: 22px;
+      color: #8899aa;
+    }
+    .header .clock {
+      font-size: 28px;
+      font-weight: 600;
+      color: #4fc3f7;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Stats row */
+    .stats {
+      display: flex;
+      gap: 20px;
+      padding: 16px 40px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+    }
+    .stat-item .num {
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .stat-item.pending .num { color: #ffa726; }
+    .stat-item.confirmed .num { color: #66bb6a; }
+    .stat-item.completed .num { color: #42a5f5; }
+    .stat-item.canceled .num { color: #ef5350; }
+    .stat-item .label { color: #8899aa; }
+
+    /* Board grid */
+    .board {
+      padding: 24px 40px 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+      height: calc(100vh - 140px);
+      overflow-y: auto;
+    }
+
+    /* Card */
+    .card {
+      background: linear-gradient(135deg, #1a1a2e, #222240);
+      border-radius: 16px;
+      padding: 24px;
+      border-left: 5px solid #ffa726;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card.confirmed {
+      border-left-color: #66bb6a;
+      background: linear-gradient(135deg, #1a2e1a, #224022);
+    }
+    .card.completed {
+      border-left-color: #42a5f5;
+      background: linear-gradient(135deg, #1a1a2e, #222240);
+      opacity: 0.7;
+    }
+    .card.canceled {
+      border-left-color: #ef5350;
+      background: linear-gradient(135deg, #2e1a1a, #402222);
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .card .time-badge {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffa726;
+    }
+    .card.confirmed .time-badge { color: #66bb6a; }
+    .card.completed .time-badge { color: #42a5f5; }
+    .card.canceled .time-badge { color: #ef5350; }
+
+    .card .customer {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 4px 0;
+    }
+    .card .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+      color: #aabbcc;
+    }
+    .card .meta .service {
+      background: rgba(255,255,255,0.08);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .card .meta .barber {
+      color: #8899aa;
+    }
+    .card .status-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .status-badge.pending { background: rgba(255,167,38,0.2); color: #ffa726; }
+    .status-badge.confirmed { background: rgba(102,187,106,0.2); color: #66bb6a; }
+    .status-badge.completed { background: rgba(66,165,245,0.2); color: #42a5f5; }
+    .status-badge.canceled { background: rgba(239,83,80,0.2); color: #ef5350; }
+
+    .card .note {
+      font-size: 16px;
+      color: #7788aa;
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    /* Empty state */
+    .empty {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: #556677;
+    }
+    .empty .icon { font-size: 80px; margin-bottom: 20px; }
+    .empty p { font-size: 28px; }
+
+    /* Scrollbar */
+    .board::-webkit-scrollbar { width: 8px; }
+    .board::-webkit-scrollbar-track { background: transparent; }
+    .board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+    /* Responsive adjustments for large screen */
+    @media (min-width: 1600px) {
+      .board { grid-template-columns: repeat(3, 1fr); }
+      .card .time-badge { font-size: 36px; }
+      .card .customer { font-size: 28px; }
+    }
+    @media (max-width: 768px) {
+      .header { padding: 16px 20px; flex-wrap: wrap; gap: 10px; }
+      .header h1 { font-size: 22px; }
+      .board { padding: 16px 20px; grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h1>📋 Bugünkü Randevular</h1>
+      <div class="date" id="dateDisplay"></div>
+    </div>
+    <div class="clock" id="clockDisplay"></div>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat-item pending"><span class="num" id="pendingCount">0</span> <span class="label">Bekleyen</span></div>
+    <div class="stat-item confirmed"><span class="num" id="confirmedCount">0</span> <span class="label">Onaylanan</span></div>
+    <div class="stat-item completed"><span class="num" id="completedCount">0</span> <span class="label">Tamamlanan</span></div>
+    <div class="stat-item canceled"><span class="num" id="canceledCount">0</span> <span class="label">İptal</span></div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <script>
+    const today = new Date().toISOString().split('T')[0];
+
+    function formatDateTR(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+      const days = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${days[d.getDay()]}`;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clockDisplay').textContent = `${h}:${m}:${s}`;
+    }
+
+    function statusLabel(status) {
+      const map = { pending: 'Bekliyor', confirmed: 'Onaylandı', completed: 'Tamamlandı', canceled: 'İptal' };
+      return map[status] || status;
+    }
+
+    async function loadBoard() {
+      try {
+        const res = await fetch(`/api/appointments/admin?date=${today}`);
+        const all = await res.json();
+        const board = document.getElementById('board');
+
+        // Saati geçenleri ve iptal/tamamlananları çıkar
+        const now = new Date();
+        const curTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const appointments = all.filter(a => {
+          if (a.status === 'canceled') return false;
+          if (a.status === 'completed') return false;
+          if (a.time < curTime && a.status === 'pending') return false;
+          return true;
+        });
+
+        // Stats
+        const counts = { pending: 0, confirmed: 0, completed: 0, canceled: 0 };
+        appointments.forEach(a => { counts[a.status] = (counts[a.status] || 0) + 1; });
+        document.getElementById('pendingCount').textContent = counts.pending;
+        document.getElementById('confirmedCount').textContent = counts.confirmed;
+        document.getElementById('completedCount').textContent = counts.completed;
+        document.getElementById('canceledCount').textContent = counts.canceled;
+
+        if (appointments.length === 0) {
+          board.innerHTML = `
+            <div class="empty">
+              <div class="icon">📭</div>
+              <p>Bugün için bekleyen randevu kalmadı</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Sort by time
+        appointments.sort((a, b) => a.time.localeCompare(b.time));
+
+        board.innerHTML = appointments.map(a => `
+          <div class="card ${a.status}">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div class="time-badge">${a.time}</div>
+              <span class="status-badge ${a.status}">${statusLabel(a.status)}</span>
+            </div>
+            <div class="customer">${a.customer_name}</div>
+            <div class="meta">
+              <span class="service">${a.service_name}${a.service_price ? ' • '+a.service_price+' TL' : ''}</span>
+              <span class="barber">✂️ ${a.barber_name}</span>
+            </div>
+            ${a.note ? `<div class="note">📝 ${a.note}</div>` : ''}
+            <div style="font-size:15px;color:#667788;">📞 ${a.customer_phone}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('board').innerHTML = `
+          <div class="empty">
+            <div class="icon">⚠️</div>
+            <p>Veri yüklenemedi</p>
+          </div>
+        `;
+      }
+    }
+
+    // Init
+    document.getElementById('dateDisplay').textContent = formatDateTR(today);
+    updateClock();
+    loadBoard();
+
+    // Auto refresh
+    setInterval(updateClock, 1000);
+    setInterval(loadBoard, 15000); // her 15 sn'de yenile
+  </script>
+</body>
+</html>
