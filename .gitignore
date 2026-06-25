@@ -1,4 +1,5 @@
 node_modules/
-app.db
+.DS_Store
+*.db
 data/
-*.log
+.env
